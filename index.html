@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dropout Prediction System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full">
+    <div class="min-h-full flex flex-col items-center p-4">
+        <!-- Header -->
+        <header class="w-full max-w-4xl text-center mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h1 class="text-3xl font-bold text-gray-900">AI Dropout Prediction System</h1>
+                <p class="mt-2 text-sm text-gray-500">
+                    Collaborative dashboard for risk assessment. Your user ID: <span id="user-id" class="font-mono text-gray-700">Prototype User</span>
+                </p>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="w-full max-w-4xl flex flex-col lg:flex-row gap-6">
+            <!-- Student List Section -->
+            <div class="w-full lg:w-2/3 bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-4">Student Risk Dashboard</h2>
+
+                <!-- Loading state -->
+                <div id="loading-state" class="flex flex-col items-center justify-center p-10">
+                    <div class="loading-spinner mb-4"></div>
+                    <p class="text-gray-500">Loading student data...</p>
+                </div>
+
+                <!-- Student List -->
+                <div id="student-list" class="space-y-4 hidden">
+                    <!-- Student list items will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Student Details Section -->
+            <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-6 flex-grow">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-4">Student Details</h2>
+                <div id="details-view" class="h-full flex flex-col justify-between">
+                    <p id="details-placeholder" class="text-gray-500 text-center py-10">Select a student to view details.</p>
+                    <div id="details-content" class="hidden">
+                        <!-- Details will be injected here by JavaScript -->
+                    </div>
+
+                    <!-- Dashboard for Data Averages -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Data Averages Dashboard</h3>
+                        <div id="averages-dashboard" class="space-y-4">
+                            <!-- Averages will be injected here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Message Box for simulating email -->
+        <div id="message-box" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity z-50">
+            <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-auto text-left">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Counseling Message</h3>
+                    <button onclick="closeMessageBox()" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="email-content" class="text-gray-700 space-y-4 mb-6">
+                    <!-- AI-generated message will be injected here -->
+                </div>
+                <button onclick="closeMessageBox()" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition-colors">Close</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript for the static prototype -->
+    <script type="text/javascript">
+        let studentsData = [];
+
+        // UI elements
+        const studentList = document.getElementById('student-list');
+        const detailsView = document.getElementById('details-view');
+        const detailsContent = document.getElementById('details-content');
+        const detailsPlaceholder = document.getElementById('details-placeholder');
+        const loadingState = document.getElementById('loading-state');
+        const averagesDashboard = document.getElementById('averages-dashboard');
+        const messageBox = document.getElementById('message-box');
+        const emailContent = document.getElementById('email-content');
+
+        // Sample student data
+        const SAMPLE_STUDENTS = [{
+            id: '1',
+            name: 'Alice Smith',
+            attendance: 95,
+            fees: 100,
+            marks: 85
+        }, {
+            id: '2',
+            name: 'Bob Johnson',
+            attendance: 70,
+            fees: 50,
+            marks: 55
+        }, {
+            id: '3',
+            name: 'Charlie Brown',
+            attendance: 80,
+            fees: 100,
+            marks: 65
+        }];
+
+        // Function to calculate risk level based on simple rules
+        function calculateRiskLevel(student) {
+            const {
+                attendance,
+                fees,
+                marks
+            } = student;
+            let risk = {
+                level: 'Low Risk',
+                color: 'bg-green-500',
+                explanation: 'All data points are healthy.'
+            };
+
+            if (attendance < 75 || fees < 75 || marks < 60) {
+                let issues = [];
+                if (attendance < 75) issues.push("low attendance");
+                if (fees < 75) issues.push("unpaid fees");
+                if (marks < 60) issues.push("low marks");
+                risk = {
+                    level: 'Medium Risk',
+                    color: 'bg-yellow-500',
+                    explanation: `Concerns with ${issues.join(' and ')}.`
+                };
+            }
+
+            if ((attendance < 75 && fees < 75) || (attendance < 75 && marks < 60) || (fees < 75 && marks < 60)) {
+                let issues = [];
+                if (attendance < 75) issues.push("low attendance");
+                if (fees < 75) issues.push("unpaid fees");
+                if (marks < 60) issues.push("low marks");
+                risk = {
+                    level: 'High Risk',
+                    color: 'bg-red-500',
+                    explanation: `Multiple factors, including ${issues.join(' and ')}, indicate a high risk.`
+                };
+            }
+
+            return risk;
+        }
+
+        // Function to generate the AI counseling email message
+        function generateCounselingMessage(student) {
+            const risk = calculateRiskLevel(student);
+            const {
+                name,
+                attendance,
+                fees,
+                marks
+            } = student;
+
+            let message = `<p>Dear Mentor/Parent,</p><p>This is an automated notification from our AI Dropout Prediction System regarding ${name}.</p>`;
+
+            if (risk.level === 'Low Risk') {
+                message += `<p>Based on our analysis, ${name} is currently at a <strong>Low Risk</strong> of academic difficulties. All key indicators (attendance: ${attendance}%, fees paid: ${fees}%, and marks: ${marks}%) are within a healthy range. Keep up the great work!</p>`;
+            } else if (risk.level === 'Medium Risk') {
+                message += `<p>Our system has identified ${name} as a <strong>Medium Risk</strong> student. This is primarily due to the following areas of concern:</p><ul>`;
+                if (attendance < 75) message += `<li>Attendance (${attendance}%) is below the recommended threshold.</li>`;
+                if (fees < 75) message += `<li>Fees paid (${fees}%) are not up-to-date.</li>`;
+                if (marks < 60) message += `<li>Academic marks (${marks}%) are falling below expectations.</li>`;
+                message += `</ul><p>We recommend a timely intervention to address these issues and provide necessary support.</p>`;
+            } else { // High Risk
+                message += `<p>Urgent attention is required. Our system has identified ${name} as a <strong>High Risk</strong> student based on significant concerns across multiple key areas:</p><ul>`;
+                if (attendance < 75) message += `<li>Attendance (${attendance}%) is critically low.</li>`;
+                if (fees < 75) message += `<li>Fees paid (${fees}%) are critically behind.</li>`;
+                if (marks < 60) message += `<li>Academic marks (${marks}%) are a serious concern.</li>`;
+                message += `</ul><p>We strongly recommend immediate counseling and academic support to prevent a potential dropout situation.</p>`;
+            }
+
+            message += `<p>For more details, please contact the student counseling department.</p><p>Sincerely,<br>The Dropout Prediction System</p>`;
+            return message;
+        }
+
+        // Function to render the dashboard with average values
+        function renderDashboardAverages() {
+            if (studentsData.length === 0) {
+                averagesDashboard.innerHTML = `<p class="text-gray-500">No student data available to display.</p>`;
+                return;
+            }
+
+            const totalStudents = studentsData.length;
+            const totalAttendance = studentsData.reduce((sum, s) => sum + s.attendance, 0);
+            const totalFees = studentsData.reduce((sum, s) => sum + s.fees, 0);
+            const totalMarks = studentsData.reduce((sum, s) => sum + s.marks, 0);
+
+            const avgAttendance = (totalAttendance / totalStudents).toFixed(2);
+            const avgFees = (totalFees / totalStudents).toFixed(2);
+            const avgMarks = (totalMarks / totalStudents).toFixed(2);
+
+            averagesDashboard.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
+                    <span class="text-lg font-medium text-gray-900">Attendance Average:</span>
+                    <span class="text-lg font-bold text-blue-600">${avgAttendance}%</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
+                    <span class="text-lg font-medium text-gray-900">Fees Paid Average:</span>
+                    <span class="text-lg font-bold text-green-600">${avgFees}%</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
+                    <span class="text-lg font-medium text-gray-900">Marks Average:</span>
+                    <span class="text-lg font-bold text-purple-600">${avgMarks}%</span>
+                </div>
+            `;
+        }
+
+        // Render the student list UI
+        function renderStudentList() {
+            studentList.innerHTML = '';
+            // Sort students alphabetically by name for a consistent view
+            const sortedStudents = [...studentsData].sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedStudents.forEach(student => {
+                const risk = calculateRiskLevel(student);
+                const li = document.createElement('div');
+                li.className = `p-4 flex items-center justify-between rounded-lg shadow-sm border border-gray-200 cursor-pointer transition-transform transform hover:scale-[1.01] hover:shadow-md`;
+                li.onclick = () => showStudentDetails(student.id);
+                li.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <p class="text-lg font-medium text-gray-900 truncate">${student.name}</p>
+                        <p class="text-sm text-gray-500 truncate mt-1">Attendance: ${student.attendance}% | Fees Paid: ${student.fees}% | Marks: ${student.marks}%</p>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-white ${risk.color} ml-4">
+                        ${risk.level}
+                    </span>
+                `;
+                studentList.appendChild(li);
+            });
+        }
+
+        // Render the details view for a specific student
+        function showStudentDetails(studentId) {
+            const student = studentsData.find(s => s.id === studentId);
+            if (!student) {
+                detailsPlaceholder.classList.remove('hidden');
+                detailsContent.classList.add('hidden');
+                return;
+            }
+
+            const risk = calculateRiskLevel(student);
+            detailsPlaceholder.classList.add('hidden');
+            detailsContent.classList.remove('hidden');
+
+            detailsContent.innerHTML = `
+                <div class="flex flex-col items-center text-center">
+                    <h3 class="text-xl font-semibold text-gray-900">${student.name}</h3>
+                    <p class="mt-2 text-sm font-medium text-white px-3 py-1 rounded-full ${risk.color}">${risk.level}</p>
+                </div>
+                
+                <div class="mt-6 space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm font-medium text-gray-500">Reason for Risk:</p>
+                        <p class="text-md text-gray-900 mt-1">${risk.explanation}</p>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm font-medium text-gray-500">Academic Data</p>
+                        <ul class="text-gray-900 space-y-2 mt-1">
+                            <li><strong>Attendance:</strong> ${student.attendance}%</li>
+                            <li><strong>Fees Paid:</strong> ${student.fees}%</li>
+                            <li><strong>Marks:</strong> ${student.marks}%</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button onclick="simulateEmail('${student.id}')" class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                        Simulate Email to Mentor/Parent
+                    </button>
+                </div>
+            `;
+        }
+
+        // Expose function to global scope for onclick handler
+        window.showStudentDetails = showStudentDetails;
+
+        // Simulates an email trigger
+        window.simulateEmail = (studentId) => {
+            const student = studentsData.find(s => s.id === studentId);
+            if (student) {
+                const message = generateCounselingMessage(student);
+                emailContent.innerHTML = message;
+                messageBox.classList.remove('hidden');
+            }
+        };
+
+        window.closeMessageBox = () => {
+            messageBox.classList.add('hidden');
+        };
+
+        // Main function to load data
+        function loadStaticData() {
+            // Simulate a network delay
+            setTimeout(() => {
+                studentsData = SAMPLE_STUDENTS;
+                renderStudentList();
+                renderDashboardAverages();
+                loadingState.classList.add('hidden');
+                studentList.classList.remove('hidden');
+            }, 1000); // 1-second delay
+        }
+
+        // Start the application
+        window.onload = loadStaticData;
+    </script>
+</body>
+
+</html>
